@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日任务打卡系统</title>
+    <style>
+        :root {
+            --primary-color: #0E4C98;
+            --secondary-color: #E0CEC8;
+            --accent-color: #B66845;
+            --text-color: #171C31;
+            --background-color: #DDC08B;
+            --card-background: #FFFFFF;
+            --shadow-color: rgba(14, 76, 152, 0.2);
+            --font-family: 'SimSun', '宋体', serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            line-height: 1.6;
+            background-color: var(--background-color);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* 左侧边栏样式 */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 280px;
+            background: var(--card-background);
+            box-shadow: 2px 0 10px var(--shadow-color);
+            transition: transform 0.3s ease;
+            z-index: 1001;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-280px);
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            right: -30px;
+            top: 20px;
+            width: 30px;
+            height: 60px;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 0 8px 8px 0;
+            font-size: 18px;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        /* 头像样式 */
+        .avatar-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            border: 3px solid var(--primary-color);
+            transition: transform 0.3s;
+            margin: 0 auto;
+        }
+
+        .avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .avatar:hover .avatar-overlay {
+            opacity: 1;
+        }
+
+        /* 昵称样式 */
+        .nickname-section {
+            margin-bottom: 30px;
+        }
+
+        .nickname-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: var(--secondary-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .nickname-display:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .nickname-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        /* 点数样式 */
+        .points-section {
+            margin-bottom: 30px;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .points-label {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .points-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        /* 操作按钮样式 */
+        .actions-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .actions-section button {
+            width: 100%;
+        }
+
+        /* 主容器样式 */
+        .container {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+            max-width: calc(100% - 300px);
+        }
+
+        .container.expanded {
+            margin-left: 40px;
+            max-width: calc(100% - 60px);
+        }
+
+        .login-form, .main-content, .history-content, .hidden-content {
+            display: none;
+            background: var(--card-background);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+        }
+
+        .login-form.active, .main-content.active, .history-content.active, .hidden-content.active {
+            display: block;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .points-display {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 1.5em;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            background: var(--secondary-color);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px var(--shadow-color);
+        }
+
+        .section h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .task-item, .reward-item, .history-item, .archive-item {
+            background: var(--card-background);
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            transition: transform 0.2s;
+        }
+
+        .task-item:hover, .reward-item:hover, .history-item:hover, .archive-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+        }
+
+        input[type="text"], input[type="password"], input[type="number"], textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 2px solid var(--secondary-color);
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, textarea:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: var(--card-background);
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+        }
+
+        .close {
+            color: var(--text-color);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: var(--primary-color);
+        }
+
+        .task-completed {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        .reward-redeemed {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+        }
+
+        /* 搜索框样式 */
+        .search-box {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 2px solid var(--secondary-color);
+            border-radius: 25px;
+            font-size: 16px;
+        }
+
+        .search-box::after {
+            content: "🔍";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+
+        /* 悬浮球样式 */
+        .floating-ball {
+            position: fixed;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .floating-ball:hover {
+            transform: scale(1.1);
+        }
+
+        .color-ball {
+            right: 20px;
+            bottom: 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+        }
+
+        .color-ball::before {
+            content: "🎨";
+            font-size: 20px;
+        }
+
+        .font-ball {
+            right: 20px;
+            bottom: 80px;
+            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+        }
+
+        .font-ball::before {
+            content: "Aa";
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .history-ball {
+            right: 20px;
+            bottom: 140px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--secondary-color) 100%);
+        }
+
+        .history-ball::before {
+            content: "📚";
+            font-size: 20px;
+        }
+
+        /* 色卡选择器 */
+        .color-picker {
+            position: fixed;
+            right: 80px;
+            bottom: 20px;
+            background: var(--card-background);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            z-index: 999;
+            max-width: 400px;
+        }
+
+        .color-picker.active {
+            display: grid;
+        }
+
+        .color-theme {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .color-theme:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px var(--shadow-color);
+        }
+
+        .color-options {
+            display: flex;
+            gap: 3px;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            pointer-events: none;
+        }
+
+        .color-label {
+            font-size: 10px;
+            color: var(--text-color);
+            text-align: center;
+        }
+
+        /* 字体选择器 */
+        .font-picker {
+            position: fixed;
+            right: 80px;
+            bottom: 80px;
+            background: var(--card-background);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 999;
+        }
+
+        .font-picker.active {
+            display: flex;
+        }
+
+        .font-option {
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--secondary-color);
+            text-align: center;
+        }
+
+        .font-option:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px var(--shadow-color);
+        }
+
+        /* 历史记录样式 */
+        .history-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .archive-content {
+            background: var(--card-background);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .archive-image {
+            width: 250px;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .archive-image:hover {
+            transform: scale(1.05);
+        }
+
+        /* 图片预览模态框 */
+        .image-preview {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            cursor: pointer;
+        }
+
+        .image-preview img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+
+        /* 字体主题 */
+        .font-song {
+            --font-family: 'SimSun', '宋体', serif;
+        }
+
+        .font-round {
+            --font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif;
+        }
+
+        .font-black {
+            --font-family: 'SimHei', '黑体', sans-serif;
+        }
+
+        /* 主题色系 */
+        .theme-1 {
+            --primary-color: #0E4C98;
+            --secondary-color: #E0CEC8;
+            --accent-color: #B66845;
+            --text-color: #171C31;
+            --background-color: #DDC08B;
+            --shadow-color: rgba(14, 76, 152, 0.2);
+        }
+
+        .theme-2 {
+            --primary-color: #B84C3A;
+            --secondary-color: #F5A7BB;
+            --accent-color: #A64568;
+            --text-color: #35201C;
+            --background-color: #4E6B5E;
+            --shadow-color: rgba(184, 76, 58, 0.2);
+        }
+
+        .theme-3 {
+            --primary-color: #BE9D32;
+            --secondary-color: #91AED4;
+            --accent-color: #DDCA6E;
+            --text-color: #444C83;
+            --background-color: #ACA584;
+            --shadow-color: rgba(190, 157, 50, 0.2);
+        }
+
+        .theme-4 {
+            --primary-color: #392B43;
+            --secondary-color: #DBDFE6;
+            --accent-color: #75CFE4;
+            --text-color: #DDB6E0;
+            --background-color: #A75EC3;
+            --shadow-color: rgba(57, 43, 67, 0.2);
+        }
+
+        .theme-5 {
+            --primary-color: #C7586B;
+            --secondary-color: #EEEAED;
+            --accent-color: #E9C0B2;
+            --text-color: #EBA4BD;
+            --background-color: #F0DD71;
+            --shadow-color: rgba(199, 88, 107, 0.2);
+        }
+
+        .theme-6 {
+            --primary-color: #821408;
+            --secondary-color: #D6A819;
+            --accent-color: #D27E26;
+            --text-color: #BF2F21;
+            --background-color: #A16104;
+            --shadow-color: rgba(130, 20, 8, 0.2);
+        }
+
+        .theme-7 {
+            --primary-color: #FEEDA9;
+            --secondary-color: #FCB913;
+            --accent-color: #FDE488;
+            --text-color: #FC8D13;
+            --background-color: #FC7806;
+            --shadow-color: rgba(254, 237, 169, 0.2);
+        }
+
+        .theme-8 {
+            --primary-color: #6F5639;
+            --secondary-color: #C5B69B;
+            --accent-color: #1D110D;
+            --text-color: #D55A2A;
+            --background-color: #D7B528;
+            --shadow-color: rgba(111, 86, 57, 0.2);
+        }
+
+        .theme-9 {
+            --primary-color: #BEBEBE;
+            --secondary-color: #7A848D;
+            --accent-color: #A9B7AA;
+            --text-color: #DBD4C6;
+            --background-color: #95A098;
+            --shadow-color: rgba(190, 190, 190, 0.2);
+        }
+
+        .theme-10 {
+            --primary-color: #60656C;
+            --secondary-color: #728A7A;
+            --accent-color: #D4C3AA;
+            --text-color: #A39183;
+            --background-color: #B09279;
+            --shadow-color: rgba(96, 101, 108, 0.2);
+        }
+
+        .forgot-password {
+            color: var(--primary-color);
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .forgot-password:hover {
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin-left: 0;
+                max-width: 100%;
+                padding: 15px;
+            }
+
+            .container.expanded {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                width: 100%;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.collapsed {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                right: auto;
+                left: 100%;
+                border-radius: 0 8px 8px 0;
+            }
+
+            .sidebar.collapsed .sidebar-toggle {
+                left: auto;
+                right: 0;
+            }
+
+            .content-grid, .history-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+
+            .floating-ball {
+                width: 40px;
+                height: 40px;
+            }
+
+            .color-ball {
+                right: 15px;
+                bottom: 15px;
+            }
+
+            .font-ball {
+                right: 15px;
+                bottom: 65px;
+            }
+
+            .history-ball {
+                right: 15px;
+                bottom: 115px;
+            }
+
+            .color-picker {
+                right: 65px;
+                bottom: 15px;
+                max-width: 300px;
+            }
+
+            .font-picker {
+                right: 65px;
+                bottom: 65px;
+            }
+
+            .archive-image {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 左侧展开式版面 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-toggle" onclick="toggleSidebar()">
+            <span id="toggleIcon">◀</span>
+        </div>
+        <div class="sidebar-content">
+            <!-- 头像区域 -->
+            <div class="avatar-section">
+                <div class="avatar" id="userAvatar" onclick="showAvatarUpload()">
+                    <img id="avatarImage" src="" alt="用户头像">
+                    <div class="avatar-overlay">更换头像</div>
+                </div>
+                <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="uploadAvatar()">
+            </div>
+            
+            <!-- 昵称区域 -->
+            <div class="nickname-section">
+                <div class="nickname-display" id="nicknameDisplay" onclick="editNickname()">
+                    <span id="nicknameText">用户昵称</span>
+                    <span class="edit-icon">✏️</span>
+                </div>
+                <input type="text" id="nicknameInput" class="nickname-input" style="display: none;" onblur="saveNickname()" onkeypress="handleNicknameKeypress(event)">
+            </div>
+            
+            <!-- 总点数显示 -->
+            <div class="points-section">
+                <div class="points-label">获得的总点数</div>
+                <div class="points-value" id="totalPoints">0</div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="actions-section">
+                <button onclick="logout()">退出登录</button>
+                <button class="danger" onclick="confirmClearAllData()">清除所有数据</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="container" id="container">
+        <!-- 登录表单 -->
+        <div class="login-form active" id="loginForm">
+            <h1>登录系统</h1>
+            <div class="form-group">
+                <input type="text" id="username" placeholder="用户名">
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="密码">
+            </div>
+            <button onclick="login()">登录</button>
+            <button onclick="showRegisterModal()" style="margin-left: 10px;">注册新账号</button>
+            <span class="forgot-password" onclick="showForgotPasswordModal()">忘记密码？</span>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content" id="mainContent">
+            <h1>每日任务打卡系统</h1>
+            <div class="points-display">
+                当前点数：<span id="currentPoints">0</span>
+            </div>
+
+            <div class="content-grid">
+                <!-- 今日任务板块 -->
+                <div class="section">
+                    <h2>今日任务</h2>
+                    <div id="tasksList"></div>
+                    <button onclick="showAddTaskModal()">添加新任务</button>
+                </div>
+
+                <!-- 奖励兑换板块 -->
+                <div class="section">
+                    <h2>奖励兑换</h2>
+                    <div id="rewardsList"></div>
+                    <button onclick="showAddRewardModal()">添加新奖励</button>
+                </div>
+
+                <!-- 已兑换奖励板块 -->
+                <div class="section">
+                    <h2>已兑换奖励</h2>
+                    <div id="redeemedRewardsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史记录界面 -->
+        <div class="history-content" id="historyContent">
+            <h1>历史记录</h1>
+            <div class="history-grid">
+                <!-- 积分流水 -->
+                <div class="section">
+                    <h2>积分流水</h2>
+                    <div id="pointsHistory"></div>
+                </div>
+
+                <!-- 奖励档案 -->
+                <div class="section">
+                    <h2>奖励档案</h2>
+                    <div class="search-box">
+                        <input type="text" id="rewardSearch" placeholder="搜索奖励..." onkeyup="searchRewards()">
+                    </div>
+                    <div id="rewardsArchive"></div>
+                    <button onclick="showHiddenPasswordModal()" style="margin-top: 20px;">隐藏的档案</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button onclick="showMainContent()">返回主页</button>
+            </div>
+        </div>
+
+        <!-- 隐藏档案界面 -->
+        <div class="hidden-content" id="hiddenContent">
+            <h1>隐藏的档案</h1>
+            <div class="history-grid">
+                <!-- 隐藏的积分流水 -->
+                <div class="section">
+                    <h2>隐藏的积分流水</h2>
+                    <div id="hiddenPointsHistory"></div>
+                </div>
+
+                <!-- 隐藏的奖励档案 -->
+                <div class="section">
+                    <h2>隐藏的奖励档案</h2>
+                    <div id="hiddenRewardsArchive"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button onclick="showHistoryContent()">返回历史记录</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 颜色悬浮球 -->
+    <div class="floating-ball color-ball" onclick="toggleColorPicker()"></div>
+    
+    <!-- 字体悬浮球 -->
+    <div class="floating-ball font-ball" onclick="toggleFontPicker()"></div>
+    
+    <!-- 历史记录悬浮球 -->
+    <div class="floating-ball history-ball" onclick="showHistoryContent()"></div>
+    
+    <!-- 色卡选择器 -->
+    <div class="color-picker" id="colorPicker">
+        <!-- 原有色卡 -->
+        <div class="color-theme" onclick="changeTheme('theme-1')">
+            <div class="color-label">深海蓝</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #0E4C98;"></div>
+                <div class="color-option" style="background: #E0CEC8;"></div>
+                <div class="color-option" style="background: #B66845;"></div>
+            </div>
+        </div>
+        <div class="color-theme" onclick="changeTheme('theme-2')">
+            <div class="color-label">玫瑰红</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #B84C3A;"></div>
+                <div class="color-option" style="background: #F5A7BB;"></div>
+                <div class="color-option" style="background: #A64568;"></div>
+            </div>
+        </div>
+        <div class="color-theme" onclick="changeTheme('theme-3')">
+            <div class="color-label">秋日金</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #BE9D32;"></div>
+                <div class="color-option" style="background: #91AED4;"></div>
+                <div class="color-option" style="background: #DDCA6E;"></div>
+            </div>
+        </div>
+        <div class="color-theme" onclick="changeTheme('theme-4')">
+            <div class="color-label">薰衣草</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #392B43;"></div>
+                <div class="color-option" style="background: #DBDFE6;"></div>
+                <div class="color-option" style="background: #75CFE4;"></div>
+            </div>
+        </div>
+        <div class="color-theme" onclick="changeTheme('theme-5')">
+            <div class="color-label">樱花粉</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #C7586B;"></div>
+                <div class="color-option" style="background: #EEEAED;"></div>
+                <div class="color-option" style="background: #E9C0B2;"></div>
+            </div>
+        </div>
+        <div class="color-theme" onclick="changeTheme('theme-6')">
+            <div class="color-label">琥珀金</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #821408;"></div>
+                <div class="color-option" style="background: #D6A819;"></div>
+                <div class="color-option" style="background: #D27E26;"></div>
+            </div>
+        </div>
+
+        <!-- 新增色卡1 -->
+        <div class="color-theme" onclick="changeTheme('theme-7')">
+            <div class="color-label">暖阳橙</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #FEEDA9;"></div>
+                <div class="color-option" style="background: #FCB913;"></div>
+                <div class="color-option" style="background: #FDE488;"></div>
+            </div>
+        </div>
+
+        <!-- 新增色卡2 -->
+        <div class="color-theme" onclick="changeTheme('theme-8')">
+            <div class="color-label">大地棕</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #6F5639;"></div>
+                <div class="color-option" style="background: #C5B69B;"></div>
+                <div class="color-option" style="background: #1D110D;"></div>
+            </div>
+        </div>
+
+        <!-- 新增色卡3 -->
+        <div class="color-theme" onclick="changeTheme('theme-9')">
+            <div class="color-label">高级灰</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #BEBEBE;"></div>
+                <div class="color-option" style="background: #7A848D;"></div>
+                <div class="color-option" style="background: #A9B7AA;"></div>
+            </div>
+        </div>
+
+        <!-- 新增色卡4 -->
+        <div class="color-theme" onclick="changeTheme('theme-10')">
+            <div class="color-label">自然绿</div>
+            <div class="color-options">
+                <div class="color-option" style="background: #60656C;"></div>
+                <div class="color-option" style="background: #728A7A;"></div>
+                <div class="color-option" style="background: #D4C3AA;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 字体选择器 -->
+    <div class="font-picker" id="fontPicker">
+        <div class="font-option font-song" onclick="changeFont('font-song')">宋体</div>
+        <div class="font-option font-round" onclick="changeFont('font-round')">圆体</div>
+        <div class="font-option font-black" onclick="changeFont('font-black')">黑体</div>
+    </div>
+
+    <!-- 注册模态框 -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRegisterModal()">&times;</span>
+            <h2>注册新账号</h2>
+            <div class="form-group">
+                <input type="text" id="regUsername" placeholder="用户名">
+            </div>
+            <div class="form-group">
+                <input type="password" id="regPassword" placeholder="密码">
+            </div>
+            <button onclick="register()">注册</button>
+        </div>
+    </div>
+
+    <!-- 忘记密码模态框 -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
+            <h2>重置密码</h2>
+            <div class="form-group">
+                <input type="text" id="resetUsername" placeholder="用户名">
+            </div>
+            <div class="form-group">
+                <input type="password" id="newPassword" placeholder="新密码">
+            </div>
+            <div class="form-group">
+                <input type="password" id="confirmPassword" placeholder="确认新密码">
+            </div>
+            <button onclick="resetPassword()">重置密码</button>
+        </div>
+    </div>
+
+    <!-- 隐藏档案密码模态框 -->
+    <div id="hiddenPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeHiddenPasswordModal()">&times;</span>
+            <h2>访问隐藏档案</h2>
+            <div class="form-group">
+                <input type="password" id="hiddenPassword" placeholder="输入密码">
+            </div>
+            <button onclick="checkHiddenPassword()">确认</button>
+        </div>
+    </div>
+
+    <!-- 添加任务模态框 -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeTaskModal()">&times;</span>
+            <h2>添加新任务</h2>
+            <div class="form-group">
+                <input type="text" id="taskName" placeholder="任务名称">
+            </div>
+            <div class="form-group">
+                <input type="number" id="taskPoints" placeholder="完成点数">
+            </div>
+            <button onclick="addTask()">添加任务</button>
+        </div>
+    </div>
+
+    <!-- 添加奖励模态框 -->
+    <div id="rewardModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRewardModal()">&times;</span>
+            <h2>添加新奖励</h2>
+            <div class="form-group">
+                <input type="text" id="rewardName" placeholder="奖励名称">
+            </div>
+            <div class="form-group">
+                <input type="number" id="rewardPoints" placeholder="所需点数">
+            </div>
+            <button onclick="addReward()">添加奖励</button>
+        </div>
+    </div>
+
+    <!-- 归档奖励模态框 -->
+    <div id="archiveModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeArchiveModal()">&times;</span>
+            <h2>归档奖励</h2>
+            <div class="form-group">
+                <textarea id="archiveThoughts" placeholder="写下你的感想（选填）..." rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <input type="file" id="archiveImage" accept="image/*">
+            </div>
+            <button onclick="archiveReward()">确认归档</button>
+        </div>
+    </div>
+
+    <!-- 图片预览模态框 -->
+    <div id="imagePreview" class="image-preview" onclick="closeImagePreview()">
+        <img id="previewImage" src="" alt="预览图片">
+    </div>
+
+    <script>
+        // 全局变量
+        let currentUser = null;
+        let userData = null;
+        let currentArchiveRewardId = null;
+
+        // 初始化
+        window.onload = function() {
+            // 加载保存的主题
+            const savedTheme = localStorage.getItem('selectedTheme');
+            if (savedTheme) {
+                document.body.className = savedTheme;
+            }
+
+            // 加载保存的字体
+            const savedFont = localStorage.getItem('selectedFont');
+            if (savedFont) {
+                document.body.classList.add(savedFont);
+            }
+
+            // 初始化侧边栏状态
+            const sidebar = document.getElementById('sidebar');
+            const container = document.getElementById('container');
+            sidebar.classList.add('collapsed');
+            container.classList.add('expanded');
+
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = savedUser;
+                userData = JSON.parse(localStorage.getItem(`userData_${currentUser}`));
+                if (userData) {
+                    showMainContent();
+                    updateDisplay();
+                }
+            }
+        };
+
+        // 切换侧边栏
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const container = document.getElementById('container');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            sidebar.classList.toggle('collapsed');
+            container.classList.toggle('expanded');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                toggleIcon.textContent = '▶';
+            } else {
+                toggleIcon.textContent = '◀';
+            }
+        }
+
+        // 头像上传功能
+        function showAvatarUpload() {
+            document.getElementById('avatarInput').click();
+        }
+
+        function uploadAvatar() {
+            const file = document.getElementById('avatarInput').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatarImage = document.getElementById('avatarImage');
+                    avatarImage.src = e.target.result;
+                    localStorage.setItem(`avatar_${currentUser}`, e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 昵称编辑功能
+        function editNickname() {
+            const nicknameDisplay = document.getElementById('nicknameDisplay');
+            const nicknameInput = document.getElementById('nicknameInput');
+            const nicknameText = document.getElementById('nicknameText');
+            
+            nicknameDisplay.style.display = 'none';
+            nicknameInput.style.display = 'block';
+            nicknameInput.value = nicknameText.textContent;
+            nicknameInput.focus();
+        }
+
+        function saveNickname() {
+            const nicknameDisplay = document.getElementById('nicknameDisplay');
+            const nicknameInput = document.getElementById('nicknameInput');
+            const nicknameText = document.getElementById('nicknameText');
+            
+            const newNickname = nicknameInput.value.trim();
+            if (newNickname) {
+                nicknameText.textContent = newNickname;
+                localStorage.setItem(`nickname_${currentUser}`, newNickname);
+            }
+            
+            nicknameDisplay.style.display = 'flex';
+            nicknameInput.style.display = 'none';
+        }
+
+        function handleNicknameKeypress(event) {
+            if (event.key === 'Enter') {
+                saveNickname();
+            }
+        }
+
+        // 计算总点数
+        function calculateTotalPoints() {
+            if (!userData.pointsHistory) return 0;
+            
+            let totalEarned = 0;
+            let totalSpent = 0;
+            
+            userData.pointsHistory.forEach(record => {
+                if (record.type === 'earn') {
+                    totalEarned += record.points;
+                } else {
+                    totalSpent += record.points;
+                }
+            });
+            
+            return totalEarned - totalSpent;
+        }
+
+        // 更新总点数显示
+        function updateTotalPoints() {
+            const totalPoints = calculateTotalPoints();
+            document.getElementById('totalPoints').textContent = totalPoints;
+        }
+
+        // 切换色卡选择器
+        function toggleColorPicker() {
+            const picker = document.getElementById('colorPicker');
+            picker.classList.toggle('active');
+            // 关闭其他选择器
+            document.getElementById('fontPicker').classList.remove('active');
+        }
+
+        // 切换字体选择器
+        function toggleFontPicker() {
+            const picker = document.getElementById('fontPicker');
+            picker.classList.toggle('active');
+            // 关闭其他选择器
+            document.getElementById('colorPicker').classList.remove('active');
+        }
+
+        // 更改主题
+        function changeTheme(themeName) {
+            // 移除所有主题类
+            document.body.className = document.body.className.replace(/theme-\d+/g, '');
+            // 添加新主题类
+            document.body.classList.add(themeName);
+            localStorage.setItem('selectedTheme', themeName);
+            toggleColorPicker();
+        }
+
+        // 更改字体
+        function changeFont(fontName) {
+            // 移除所有字体类
+            document.body.classList.remove('font-song', 'font-round', 'font-black');
+            // 添加新字体类
+            document.body.classList.add(fontName);
+            localStorage.setItem('selectedFont', fontName);
+            toggleFontPicker();
+        }
+
+        // 显示历史记录界面
+        function showHistoryContent() {
+            document.getElementById('loginForm').classList.remove('active');
+            document.getElementById('mainContent').classList.remove('active');
+            document.getElementById('hiddenContent').classList.remove('active');
+            document.getElementById('historyContent').classList.add('active');
+            updateHistoryDisplay();
+        }
+
+        // 显示隐藏档案界面
+        function showHiddenContent() {
+            document.getElementById('loginForm').classList.remove('active');
+            document.getElementById('mainContent').classList.remove('active');
+            document.getElementById('historyContent').classList.remove('active');
+            document.getElementById('hiddenContent').classList.add('active');
+            updateHiddenDisplay();
+        }
+
+        // 显示主内容
+        function showMainContent() {
+            document.getElementById('loginForm').classList.remove('active');
+            document.getElementById('historyContent').classList.remove('active');
+            document.getElementById('hiddenContent').classList.remove('active');
+            document.getElementById('mainContent').classList.add('active');
+        }
+
+        // 搜索奖励
+        function searchRewards() {
+            const searchTerm = document.getElementById('rewardSearch').value.toLowerCase();
+            const rewardsArchive = document.getElementById('rewardsArchive');
+            const archives = rewardsArchive.getElementsByClassName('archive-item');
+            
+            Array.from(archives).forEach(archive => {
+                const text = archive.textContent.toLowerCase();
+                // 转换搜索词和文本，统一数字和标点符号
+                const normalizedSearch = searchTerm.replace(/[，。！？；：""''（）【】《》]/g, ',.!?;:""()[]<>')
+                                                .replace(/[0-9]/g, d => '零一二三四五六七八九'[parseInt(d)]);
+                const normalizedText = text.replace(/[，。！？；：""''（）【】《》]/g, ',.!?;:""()[]<>')
+                                           .replace(/[0-9]/g, d => '零一二三四五六七八九'[parseInt(d)]);
+                
+                if (normalizedText.includes(normalizedSearch)) {
+                    archive.style.display = 'flex';
+                } else {
+                    archive.style.display = 'none';
+                }
+            });
+        }
+
+        // 更新历史记录显示
+        function updateHistoryDisplay() {
+            // 更新积分流水
+            const pointsHistory = document.getElementById('pointsHistory');
+            pointsHistory.innerHTML = '';
+            if (userData.pointsHistory) {
+                userData.pointsHistory.filter(record => !record.hidden).forEach(record => {
+                    const recordDiv = document.createElement('div');
+                    recordDiv.className = 'history-item';
+                    recordDiv.innerHTML = `
+                        <div>
+                            <span>${record.type === 'earn' ? '+' : '-'}${record.points}点</span>
+                            <span style="margin-left: 10px; color: var(--text-color);">${record.description}</span>
+                        </div>
+                        <div style="color: var(--text-color); font-size: 0.9em;">${record.date}</div>
+                    `;
+                    pointsHistory.appendChild(recordDiv);
+                });
+            }
+
+            // 更新奖励档案
+            const rewardsArchive = document.getElementById('rewardsArchive');
+            rewardsArchive.innerHTML = '';
+            if (userData.rewardsArchive) {
+                userData.rewardsArchive.filter(archive => !archive.hidden).forEach(archive => {
+                    const archiveDiv = document.createElement('div');
+                    archiveDiv.className = 'archive-item';
+                    archiveDiv.innerHTML = `
+                        <div>
+                            <h3>${archive.name}</h3>
+                            <div class="archive-content">
+                                ${archive.thoughts ? `<p>${archive.thoughts}</p>` : ''}
+                                ${archive.thumbnail ? `<img src="${archive.thumbnail}" class="archive-image" onclick="showImagePreview('${archive.image}')" alt="奖励图片">` : ''}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-color); font-size: 0.9em;">${archive.date}</div>
+                            <button onclick="toggleArchiveVisibility('${archive.id}')">隐藏</button>
+                        </div>
+                    `;
+                    rewardsArchive.appendChild(archiveDiv);
+                });
+            }
+        }
+
+        // 更新隐藏档案显示
+        function updateHiddenDisplay() {
+            // 更新隐藏的积分流水
+            const hiddenPointsHistory = document.getElementById('hiddenPointsHistory');
+            hiddenPointsHistory.innerHTML = '';
+            if (userData.pointsHistory) {
+                userData.pointsHistory.filter(record => record.hidden).forEach(record => {
+                    const recordDiv = document.createElement('div');
+                    recordDiv.className = 'history-item';
+                    recordDiv.innerHTML = `
+                        <div>
+                            <span>${record.type === 'earn' ? '+' : '-'}${record.points}点</span>
+                            <span style="margin-left: 10px; color: var(--text-color);">${record.description}</span>
+                        </div>
+                        <div style="color: var(--text-color); font-size: 0.9em;">${record.date}</div>
+                    `;
+                    hiddenPointsHistory.appendChild(recordDiv);
+                });
+            }
+
+            // 更新隐藏的奖励档案
+            const hiddenRewardsArchive = document.getElementById('hiddenRewardsArchive');
+            hiddenRewardsArchive.innerHTML = '';
+            if (userData.rewardsArchive) {
+                userData.rewardsArchive.filter(archive => archive.hidden).forEach(archive => {
+                    const archiveDiv = document.createElement('div');
+                    archiveDiv.className = 'archive-item';
+                    archiveDiv.innerHTML = `
+                        <div>
+                            <h3>${archive.name}</h3>
+                            <div class="archive-content">
+                                ${archive.thoughts ? `<p>${archive.thoughts}</p>` : ''}
+                                ${archive.thumbnail ? `<img src="${archive.thumbnail}" class="archive-image" onclick="showImagePreview('${archive.image}')" alt="奖励图片">` : ''}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-color); font-size: 0.9em;">${archive.date}</div>
+                            <button onclick="toggleArchiveVisibility('${archive.id}')">显示</button>
+                        </div>
+                    `;
+                    hiddenRewardsArchive.appendChild(archiveDiv);
+                });
+            }
+        }
+
+        // 切换档案可见性
+        function toggleArchiveVisibility(archiveId) {
+            const archive = userData.rewardsArchive.find(a => a.id === archiveId);
+            if (archive) {
+                archive.hidden = !archive.hidden;
+                
+                // 更新相关积分流水的可见性
+                const relatedRecords = userData.pointsHistory.filter(record => 
+                    record.description.includes(archive.name)
+                );
+                relatedRecords.forEach(record => {
+                    record.hidden = archive.hidden;
+                });
+                
+                saveUserData();
+                if (document.getElementById('historyContent').classList.contains('active')) {
+                    updateHistoryDisplay();
+                } else if (document.getElementById('hiddenContent').classList.contains('active')) {
+                    updateHiddenDisplay();
+                }
+            }
+        }
+
+        // 显示隐藏档案密码模态框
+        function showHiddenPasswordModal() {
+            document.getElementById('hiddenPasswordModal').style.display = 'block';
+        }
+
+        // 关闭隐藏档案密码模态框
+        function closeHiddenPasswordModal() {
+            document.getElementById('hiddenPasswordModal').style.display = 'none';
+            document.getElementById('hiddenPassword').value = '';
+        }
+
+        // 检查隐藏档案密码
+        function checkHiddenPassword() {
+            const password = document.getElementById('hiddenPassword').value;
+            if (password === userData.password) {
+                closeHiddenPasswordModal();
+                showHiddenContent();
+            } else {
+                alert('密码错误！');
+            }
+        }
+
+        // 显示图片预览
+        function showImagePreview(imageSrc) {
+            const preview = document.getElementById('imagePreview');
+            const previewImage = document.getElementById('previewImage');
+            previewImage.src = imageSrc;
+            preview.style.display = 'block';
+        }
+
+        // 关闭图片预览
+        function closeImagePreview() {
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+
+        // 裁剪图片为缩略图
+        function createThumbnail(imageFile, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 设置缩略图尺寸
+                    const size = 250;
+                    canvas.width = size;
+                    canvas.height = size;
+                    
+                    // 计算裁剪区域
+                    const ratio = Math.min(size / img.width, size / img.height);
+                    const width = img.width * ratio;
+                    const height = img.height * ratio;
+                    const x = (size - width) / 2;
+                    const y = (size - height) / 2;
+                    
+                    // 绘制缩略图
+                    ctx.drawImage(img, x, y, width, height);
+                    
+                    // 获取缩略图数据
+                    const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+                    callback(thumbnail, e.target.result);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(imageFile);
+        }
+
+        // 登录功能
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const savedData = localStorage.getItem(`userData_${username}`);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                if (data.password === password) {
+                    currentUser = username;
+                    userData = data;
+                    localStorage.setItem('currentUser', username);
+                    showMainContent();
+                    updateDisplay();
+                } else {
+                    alert('密码错误！');
+                }
+            } else {
+                alert('用户不存在！');
+            }
+        }
+
+        // 注册功能
+        function register() {
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            
+            if (localStorage.getItem(`userData_${username}`)) {
+                alert('用户名已存在！');
+                return;
+            }
+
+            userData = {
+                username: username,
+                password: password,
+                currentPoints: 0,
+                tasks: [],
+                rewards: [],
+                pointsHistory: [],
+                rewardsArchive: []
+            };
+
+            localStorage.setItem(`userData_${username}`, JSON.stringify(userData));
+            currentUser = username;
+            localStorage.setItem('currentUser', username);
+            closeRegisterModal();
+            showMainContent();
+            updateDisplay();
+        }
+
+        // 忘记密码功能
+        function resetPassword() {
+            const username = document.getElementById('resetUsername').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!username || !newPassword || !confirmPassword) {
+                alert('请填写完整信息！');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert('两次输入的密码不一致！');
+                return;
+            }
+
+            const savedData = localStorage.getItem(`userData_${username}`);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                data.password = newPassword;
+                localStorage.setItem(`userData_${username}`, JSON.stringify(data));
+                alert('密码重置成功！');
+                closeForgotPasswordModal();
+            } else {
+                alert('用户不存在！');
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            userData = null;
+            document.getElementById('loginForm').classList.add('active');
+            document.getElementById('mainContent').classList.remove('active');
+            document.getElementById('historyContent').classList.remove('active');
+            document.getElementById('hiddenContent').classList.remove('active');
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            document.getElementById('currentPoints').textContent = userData.currentPoints;
+            
+            // 更新任务列表
+            const tasksList = document.getElementById('tasksList');
+            tasksList.innerHTML = '';
+            userData.tasks.forEach(task => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = 'task-item';
+                taskDiv.innerHTML = `
+                    <div>
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} 
+                               onchange="toggleTask('${task.id}')">
+                        <span class="${task.completed ? 'task-completed' : ''}">${task.name} (${task.points}点)</span>
+                    </div>
+                    <button class="danger" onclick="deleteTask('${task.id}')">删除</button>
+                `;
+                tasksList.appendChild(taskDiv);
+            });
+
+            // 更新可兑换奖励列表
+            const rewardsList = document.getElementById('rewardsList');
+            rewardsList.innerHTML = '';
+            userData.rewards.filter(r => !r.redeemed).forEach(reward => {
+                const rewardDiv = document.createElement('div');
+                rewardDiv.className = 'reward-item';
+                rewardDiv.innerHTML = `
+                    <div>
+                        <span>${reward.name} (${reward.requiredPoints}点)</span>
+                    </div>
+                    <button onclick="toggleReward('${reward.id}')">
+                        兑换
+                    </button>
+                `;
+                rewardsList.appendChild(rewardDiv);
+            });
+
+            // 更新已兑换奖励列表
+            const redeemedRewardsList = document.getElementById('redeemedRewardsList');
+            redeemedRewardsList.innerHTML = '';
+            userData.rewards.filter(r => r.redeemed && !r.archived).forEach(reward => {
+                const rewardDiv = document.createElement('div');
+                rewardDiv.className = 'reward-item reward-redeemed';
+                rewardDiv.innerHTML = `
+                    <div>
+                        <span>${reward.name} (${reward.requiredPoints}点)</span>
+                    </div>
+                    <div>
+                        <button onclick="showArchiveModal('${reward.id}')">完成</button>
+                        <button class="danger" onclick="toggleReward('${reward.id}')">取消兑换</button>
+                    </div>
+                `;
+                redeemedRewardsList.appendChild(rewardDiv);
+            });
+
+            // 更新总点数
+            updateTotalPoints();
+        }
+
+        // 添加任务
+        function addTask() {
+            const name = document.getElementById('taskName').value;
+            const points = parseInt(document.getElementById('taskPoints').value);
+            
+            if (!name || !points) {
+                alert('请填写完整信息！');
+                return;
+            }
+
+            const task = {
+                id: Date.now().toString(),
+                name: name,
+                points: points,
+                completed: false,
+                date: new Date().toLocaleDateString()
+            };
+
+            userData.tasks.push(task);
+            saveUserData();
+            updateDisplay();
+            closeTaskModal();
+        }
+
+        // 切换任务状态
+        function toggleTask(taskId) {
+            const task = userData.tasks.find(t => t.id === taskId);
+            if (task) {
+                if (!task.completed) {
+                    userData.currentPoints += task.points;
+                    // 添加积分流水记录
+                    if (!userData.pointsHistory) userData.pointsHistory = [];
+                    userData.pointsHistory.push({
+                        type: 'earn',
+                        points: task.points,
+                        description: `完成任务：${task.name}`,
+                        date: new Date().toLocaleString()
+                    });
+                } else {
+                    userData.currentPoints -= task.points;
+                    // 添加积分流水记录
+                    if (!userData.pointsHistory) userData.pointsHistory = [];
+                    userData.pointsHistory.push({
+                        type: 'spend',
+                        points: task.points,
+                        description: `取消任务：${task.name}`,
+                        date: new Date().toLocaleString()
+                    });
+                }
+                task.completed = !task.completed;
+                saveUserData();
+                updateDisplay();
+            }
+        }
+
+        // 删除任务
+        function deleteTask(taskId) {
+            const task = userData.tasks.find(t => t.id === taskId);
+            if (task && task.completed) {
+                userData.currentPoints -= task.points;
+                // 添加积分流水记录
+                if (!userData.pointsHistory) userData.pointsHistory = [];
+                userData.pointsHistory.push({
+                    type: 'spend',
+                    points: task.points,
+                    description: `删除任务：${task.name}`,
+                    date: new Date().toLocaleString()
+                });
+            }
+            userData.tasks = userData.tasks.filter(t => t.id !== taskId);
+            saveUserData();
+            updateDisplay();
+        }
+
+        // 添加奖励
+        function addReward() {
+            const name = document.getElementById('rewardName').value;
+            const points = parseInt(document.getElementById('rewardPoints').value);
+            
+            if (!name || !points) {
+                alert('请填写完整信息！');
+                return;
+            }
+
+            const reward = {
+                id: Date.now().toString(),
+                name: name,
+                requiredPoints: points,
+                redeemed: false,
+                archived: false
+            };
+
+            userData.rewards.push(reward);
+            saveUserData();
+            updateDisplay();
+            closeRewardModal();
+        }
+
+        // 切换奖励状态
+        function toggleReward(rewardId) {
+            const reward = userData.rewards.find(r => r.id === rewardId);
+            if (reward) {
+                if (!reward.redeemed) {
+                    if (userData.currentPoints >= reward.requiredPoints) {
+                        userData.currentPoints -= reward.requiredPoints;
+                        reward.redeemed = true;
+                        // 添加积分流水记录
+                        if (!userData.pointsHistory) userData.pointsHistory = [];
+                        userData.pointsHistory.push({
+                            type: 'spend',
+                            points: reward.requiredPoints,
+                            description: `兑换奖励：${reward.name}`,
+                            date: new Date().toLocaleString()
+                        });
+                    } else {
+                        alert('点数不足！');
+                        return;
+                    }
+                } else {
+                    userData.currentPoints += reward.requiredPoints;
+                    reward.redeemed = false;
+                    // 添加积分流水记录
+                    if (!userData.pointsHistory) userData.pointsHistory = [];
+                    userData.pointsHistory.push({
+                        type: 'earn',
+                        points: reward.requiredPoints,
+                        description: `取消奖励：${reward.name}`,
+                        date: new Date().toLocaleString()
+                    });
+                }
+                saveUserData();
+                updateDisplay();
+            }
+        }
+
+        // 显示归档模态框
+        function showArchiveModal(rewardId) {
+            currentArchiveRewardId = rewardId;
+            document.getElementById('archiveModal').style.display = 'block';
+        }
+
+        // 关闭归档模态框
+        function closeArchiveModal() {
+            document.getElementById('archiveModal').style.display = 'none';
+            document.getElementById('archiveThoughts').value = '';
+            document.getElementById('archiveImage').value = '';
+            currentArchiveRewardId = null;
+        }
+
+        // 归档奖励
+        function archiveReward() {
+            const reward = userData.rewards.find(r => r.id === currentArchiveRewardId);
+            if (reward) {
+                const thoughts = document.getElementById('archiveThoughts').value;
+                const imageFile = document.getElementById('archiveImage').files[0];
+                
+                // 标记奖励为已归档
+                reward.archived = true;
+                
+                // 处理图片（如果有）
+                if (imageFile) {
+                    createThumbnail(imageFile, function(thumbnail, originalImage) {
+                        saveArchive(reward, thoughts, thumbnail, originalImage);
+                    });
+                } else {
+                    saveArchive(reward, thoughts, null, null);
+                }
+            }
+        }
+
+        // 保存归档
+        function saveArchive(reward, thoughts, thumbnail, originalImage) {
+            // 添加到档案记录
+            if (!userData.rewardsArchive) userData.rewardsArchive = [];
+            userData.rewardsArchive.push({
+                id: Date.now().toString(),
+                name: reward.name,
+                points: reward.requiredPoints,
+                thoughts: thoughts,
+                thumbnail: thumbnail,
+                image: originalImage,
+                date: new Date().toLocaleString(),
+                hidden: false
+            });
+
+            saveUserData();
+            updateDisplay();
+            closeArchiveModal();
+        }
+
+        // 保存用户数据
+        function saveUserData() {
+            localStorage.setItem(`userData_${currentUser}`, JSON.stringify(userData));
+        }
+
+        // 清除所有数据
+        function confirmClearAllData() {
+            if (confirm('确定要清除所有数据吗？此操作不可恢复！')) {
+                localStorage.removeItem(`userData_${currentUser}`);
+                userData = {
+                    username: currentUser,
+                    password: userData.password,
+                    currentPoints: 0,
+                    tasks: [],
+                    rewards: [],
+                    pointsHistory: [],
+                    rewardsArchive: []
+                };
+                saveUserData();
+                updateDisplay();
+            }
+        }
+
+        // 模态框控制函数
+        function showRegisterModal() {
+            document.getElementById('registerModal').style.display = 'block';
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('registerModal').style.display = 'none';
+            document.getElementById('regUsername').value = '';
+            document.getElementById('regPassword').value = '';
+        }
+
+        function showForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').style.display = 'block';
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+            document.getElementById('resetUsername').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        }
+
+        function showAddTaskModal() {
+            document.getElementById('taskModal').style.display = 'block';
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').style.display = 'none';
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskPoints').value = '';
+        }
+
+        function showAddRewardModal() {
+            document.getElementById('rewardModal').style.display = 'block';
+        }
+
+        function closeRewardModal() {
+            document.getElementById('rewardModal').style.display = 'none';
+            document.getElementById('rewardName').value = '';
+            document.getElementById('rewardPoints').value = '';
+        }
+
+        // 点击模态框外部关闭模态框
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
+

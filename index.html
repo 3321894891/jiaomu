@@ -779,6 +779,187 @@
                 height: auto;
             }
         }
+        /* 横屏样式 */
+@media (orientation: landscape) {
+    .container {
+        margin-left: 40px;
+        max-width: calc(100% - 60px);
+    }
+    
+    .sidebar {
+        transform: translateX(-280px);
+    }
+    
+    .sidebar-toggle {
+        right: auto;
+        left: 100%;
+    }
+    
+    .content-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+    }
+    
+    .history-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .points-display {
+        font-size: 1.2em;
+        padding: 12px;
+    }
+    
+    h1 {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+    }
+    
+    h2 {
+        font-size: 1.2em;
+    }
+    
+    /* 调整悬浮球位置 */
+    .floating-ball {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .color-ball {
+        right: 10px;
+        bottom: 10px;
+    }
+    
+    .font-ball {
+        right: 10px;
+        bottom: 60px;
+    }
+    
+    .history-ball {
+        right: 10px;
+        bottom: 110px;
+    }
+    
+    /* 调整色卡选择器位置 */
+    .color-picker {
+        right: 60px;
+        bottom: 10px;
+        max-width: 350px;
+    }
+    
+    .font-picker {
+        right: 60px;
+        bottom: 60px;
+    }
+    
+    /* 调整模态框大小 */
+    .modal-content {
+        width: 90%;
+        margin: 5% auto;
+        padding: 20px;
+    }
+    
+    /* 调整任务和奖励项 */
+    .task-item, .reward-item, .history-item, .archive-item {
+        padding: 8px;
+        font-size: 0.9em;
+    }
+    
+    button {
+        padding: 8px 15px;
+        font-size: 0.9em;
+    }
+    
+    /* 调整头像区域 */
+    .avatar {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .points-section {
+        padding: 15px;
+    }
+    
+    .points-value {
+        font-size: 20px;
+    }
+}
+
+/* 竖屏样式优化 */
+@media (orientation: portrait) {
+    .container {
+        margin-left: 0;
+        max-width: 100%;
+    }
+    
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+}
+/* 横屏时的额外优化 */
+@media (orientation: landscape) and (max-height: 500px) {
+    body {
+        padding: 10px;
+    }
+    
+    .login-form, .main-content, .history-content, .hidden-content {
+        padding: 15px;
+    }
+    
+    .section {
+        padding: 15px;
+    }
+    
+    .points-display {
+        margin-bottom: 20px;
+        padding: 10px;
+    }
+    
+    .content-grid {
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    /* 压缩任务和奖励项的垂直间距 */
+    .task-item, .reward-item, .history-item, .archive-item {
+        margin: 5px 0;
+        padding: 6px;
+    }
+    
+    /* 调整按钮大小 */
+    button {
+        padding: 6px 12px;
+        font-size: 0.85em;
+    }
+    
+    /* 调整标题大小 */
+    h1 {
+        font-size: 1.3em;
+        margin-bottom: 10px;
+    }
+    
+    h2 {
+        font-size: 1.1em;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+    }
+}
+
+/* 横屏且宽度较大时的优化 */
+@media (orientation: landscape) and (min-width: 1024px) {
+    .content-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+    
+    .history-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .container {
+        margin-left: 40px;
+        max-width: calc(100% - 60px);
+    }
+}
     </style>
 </head>
 <body>
@@ -1155,11 +1336,22 @@
         if (savedTheme) document.body.className = savedTheme;
         if (savedFont) document.body.classList.add(savedFont);
 
-        // 初始化侧边栏状态
+// 初始化设备方向
+        handleOrientationChange();
+        
+        // 初始化侧边栏状态（根据方向决定）
+        const isLandscape = window.matchMedia("(orientation: landscape)").matches;
         const sidebar = document.getElementById('sidebar');
         const container = document.getElementById('container');
-        sidebar.classList.add('collapsed');
-        container.classList.add('expanded');
+        
+        if (isLandscape || window.innerWidth < 768) {
+            sidebar.classList.add('collapsed');
+            container.classList.add('expanded');
+        } else {
+            sidebar.classList.remove('collapsed');
+            container.classList.remove('expanded');
+        }
+
 
         // 检查是否已登录
         const currentUser = AV.User.current();
@@ -1177,7 +1369,54 @@
             }
         }
     };
+// 检测设备方向变化
+function handleOrientationChange() {
+    const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+    
+    if (isLandscape) {
+        document.body.classList.add('landscape');
+        document.body.classList.remove('portrait');
+        console.log('横屏模式');
+    } else {
+        document.body.classList.add('portrait');
+        document.body.classList.remove('landscape');
+        console.log('竖屏模式');
+    }
+    
+    // 调整布局
+    adjustLayoutForOrientation();
+}
 
+// 根据方向调整布局
+function adjustLayoutForOrientation() {
+    const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+    const sidebar = document.getElementById('sidebar');
+    const container = document.getElementById('container');
+    
+    if (isLandscape) {
+        // 横屏时自动收起侧边栏以节省空间
+        if (!sidebar.classList.contains('collapsed')) {
+            toggleSidebar();
+        }
+    } else {
+        // 竖屏时根据屏幕宽度决定侧边栏状态
+        if (window.innerWidth < 768) {
+            sidebar.classList.add('collapsed');
+            container.classList.add('expanded');
+        }
+    }
+}
+
+// 监听方向变化
+window.addEventListener('orientationchange', function() {
+    // 添加延迟以确保方向变化完成
+    setTimeout(handleOrientationChange, 100);
+});
+
+// 监听窗口大小变化（某些设备方向变化也会触发resize）
+window.addEventListener('resize', function() {
+    setTimeout(handleOrientationChange, 100);
+});
     // 从云数据库加载用户数据
     async function loadUserData() {
         const currentUser = AV.User.current();
@@ -1213,7 +1452,26 @@
             throw error;
         }
     }
+// 显示方向提示
+function showOrientationTip() {
+    const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+    
+    if (isLandscape && window.innerHeight < 400) {
+        // 横屏且高度很小时显示提示
+        if (!localStorage.getItem('orientationTipShown')) {
+            alert('建议在竖屏模式下使用以获得最佳体验');
+            localStorage.setItem('orientationTipShown', 'true');
+        }
+    }
+}
 
+// 在方向变化时调用
+window.addEventListener('orientationchange', function() {
+    setTimeout(() => {
+        handleOrientationChange();
+        showOrientationTip();
+    }, 100);
+});v
     // 加载用户个人资料
     function loadUserProfile() {
         const currentUser = AV.User.current();
@@ -2120,5 +2378,4 @@ async function resetPassword() {
     }
 </script>
 </body>
-
 </html>
